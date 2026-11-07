@@ -10,4 +10,14 @@ const getAllBooks = async () => {
     }
 }
 
-export { getAllBooks };
+const getAllBookById = async (id) => {
+    try {
+        const book = await getDb().collection('books').findOne({ id: id });
+        return book;
+    } catch (error) {
+        console.error(`Failed to fetch book with id ${id}:`, error);
+        throw new Error('Unable to retrieve book');
+    }
+}
+
+export { getAllBooks, getAllBookById };
