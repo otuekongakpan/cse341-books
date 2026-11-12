@@ -1,6 +1,12 @@
 import express from "express";
-import { getBooksHandler, getBookByIdHandler } from "./controllers/books.js";
-
+import { getBooksHandler, getBookByIdHandler } from './controllers/books.js';
+import {
+  getAllAuthorsHandler,
+  getAuthorByIdHandler,
+  createAuthorHandler,
+  updateAuthorHandler,
+  deleteAuthorHandler
+} from './controllers/authors.js';
 const router = express.Router();
 
 /**
@@ -82,5 +88,240 @@ router.get('/books', getBooksHandler);
  *         description: Internal server error.
  */
 router.get('/books/:id', getBookByIdHandler);
+
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Author:
+ *       type: object
+ *       required:
+ *         - id
+ *         - name
+ *         - birthYear
+ *       properties:
+ *         id:
+ *           type: string
+ *           example: a1
+ *         name:
+ *           type: string
+ *           example: Maya Rivera
+ *         birthYear:
+ *           type: integer
+ *           example: 1975
+ *     AuthorInput:
+ *       type: object
+ *       required:
+ *         - name
+ *         - birthYear
+ *       properties:
+ *         name:
+ *           type: string
+ *           example: Updated Author Name
+ *         birthYear:
+ *           type: integer
+ *           example: 1981
+ *     Error:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           example: Description of the problem
+ */
+ 
+/**
+ * @openapi
+ * /authors:
+ *   get:
+ *     summary: Get all authors
+ *     tags:
+ *       - Authors
+ *     responses:
+ *       200:
+ *         description: An array of authors, sorted by id
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Author'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/authors', getAllAuthorsHandler);
+ 
+/**
+ * @openapi
+ * /authors/{id}:
+ *   get:
+ *     summary: Get one author by id
+ *     tags:
+ *       - Authors
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: a1
+ *     responses:
+ *       200:
+ *         description: The matching author
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Author'
+ *       404:
+ *         description: Author not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/authors/:id', getAuthorByIdHandler);
+ 
+/**
+ * @openapi
+ * /authors:
+ *   post:
+ *     summary: Create a new author
+ *     tags:
+ *       - Authors
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Author'
+ *           example:
+ *             id: a4
+ *             name: Example Author
+ *             birthYear: 1980
+ *     responses:
+ *       201:
+ *         description: The created author
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Author'
+ *       400:
+ *         description: Missing or invalid field
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: An author with this id already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/authors', createAuthorHandler);
+ 
+/**
+ * @openapi
+ * /authors/{id}:
+ *   put:
+ *     summary: Update an existing author
+ *     tags:
+ *       - Authors
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: a1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/AuthorInput'
+ *           example:
+ *             name: Updated Author Name
+ *             birthYear: 1981
+ *     responses:
+ *       200:
+ *         description: The updated author
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Author'
+ *       400:
+ *         description: Missing or invalid field
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Author not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.put('/authors/:id', updateAuthorHandler);
+ 
+/**
+ * @openapi
+ * /authors/{id}:
+ *   delete:
+ *     summary: Delete an author
+ *     tags:
+ *       - Authors
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: a3
+ *     responses:
+ *       204:
+ *         description: Author deleted (no response body)
+ *       404:
+ *         description: Author not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Author still has books and cannot be deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.delete('/authors/:id', deleteAuthorHandler);
 
 export default router;
