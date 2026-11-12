@@ -1,5 +1,11 @@
-import express from "express";
-import { getBooksHandler, getBookByIdHandler } from './controllers/books.js';
+import express from 'express';
+import {
+  getBooksHandler,
+  getBookByIdHandler,
+  createBookHandler,
+  updateBookHandler,
+  deleteBookHandler
+} from './controllers/books.js';
 import {
   getAllAuthorsHandler,
   getAuthorByIdHandler,
@@ -7,92 +13,51 @@ import {
   updateAuthorHandler,
   deleteAuthorHandler
 } from './controllers/authors.js';
+
 const router = express.Router();
-
-/**
- * @openapi
- * /books:
- *   get:
- *     summary: Retrieve a list of books
- *     description: Fetches all available books from the database.
- *     tags:
- *       - Books
- *     responses:
- *       200:
- *         description: A list of books successfully retrieved.
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                     example: "64a2b1c3d4e5f67890123456"
- *                   title:
- *                     type: string
- *                     example: "The Pragmatic Programmer"
- *                   author:
- *                     type: string
- *                     example: "Andrew Hunt and David Thomas"
- *       500:
- *         description: Internal server error.
- */
-router.get('/books', getBooksHandler);
-
-/**
- * @openapi
- * /books/{id}:
- *   get:
- *     summary: Get a single book by ID
- *     description: Retrieves detailed information about a specific book using its unique ID.
- *     tags:
- *       - Books
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: The unique identifier of the book.
- *         example: "64a2b1c3d4e5f67890123456"
- *     responses:
- *       200:
- *         description: Book details successfully retrieved.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                   example: "64a2b1c3d4e5f67890123456"
- *                 title:
- *                   type: string
- *                   example: "The Pragmatic Programmer"
- *                 author:
- *                   type: string
- *                   example: "Andrew Hunt and David Thomas"
- *       404:
- *         description: Book not found.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: "Book with given ID not found"
- *       500:
- *         description: Internal server error.
- */
-router.get('/books/:id', getBookByIdHandler);
 
 /**
  * @openapi
  * components:
  *   schemas:
+ *     Book:
+ *       type: object
+ *       required:
+ *         - id
+ *         - authorId
+ *         - title
+ *         - publicationDate
+ *       properties:
+ *         id:
+ *           type: string
+ *           example: b1
+ *         authorId:
+ *           type: string
+ *           description: The id of an existing author
+ *           example: a1
+ *         title:
+ *           type: string
+ *           example: Patterns of Light
+ *         publicationDate:
+ *           type: string
+ *           description: ISO 8601 date (YYYY-MM-DD)
+ *           example: '2021-08-17'
+ *     BookInput:
+ *       type: object
+ *       required:
+ *         - authorId
+ *         - title
+ *         - publicationDate
+ *       properties:
+ *         authorId:
+ *           type: string
+ *           example: a2
+ *         title:
+ *           type: string
+ *           example: Updated Book Title
+ *         publicationDate:
+ *           type: string
+ *           example: '2026-02-20'
  *     Author:
  *       type: object
  *       required:
@@ -128,7 +93,202 @@ router.get('/books/:id', getBookByIdHandler);
  *           type: string
  *           example: Description of the problem
  */
- 
+
+/* ------------------------------ Books ------------------------------ */
+
+/**
+ * @openapi
+ * /books:
+ *   get:
+ *     summary: Get all books
+ *     tags:
+ *       - Books
+ *     responses:
+ *       200:
+ *         description: An array of books, sorted by id
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Book'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/books', getBooksHandler);
+
+/**
+ * @openapi
+ * /books/{id}:
+ *   get:
+ *     summary: Get one book by id
+ *     tags:
+ *       - Books
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: b1
+ *     responses:
+ *       200:
+ *         description: The matching book
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Book'
+ *       404:
+ *         description: Book not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/books/:id', getBookByIdHandler);
+
+/**
+ * @openapi
+ * /books:
+ *   post:
+ *     summary: Create a new book
+ *     tags:
+ *       - Books
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Book'
+ *           example:
+ *             id: b4
+ *             authorId: a1
+ *             title: Example Book Title
+ *             publicationDate: '2026-01-15'
+ *     responses:
+ *       201:
+ *         description: The created book
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Book'
+ *       400:
+ *         description: Missing or invalid field, or the authorId does not match an existing author
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: A book with this id already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/books', createBookHandler);
+
+/**
+ * @openapi
+ * /books/{id}:
+ *   put:
+ *     summary: Update an existing book
+ *     tags:
+ *       - Books
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: b1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BookInput'
+ *           example:
+ *             authorId: a2
+ *             title: Updated Book Title
+ *             publicationDate: '2026-02-20'
+ *     responses:
+ *       200:
+ *         description: The updated book
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Book'
+ *       400:
+ *         description: Missing or invalid field, or the authorId does not match an existing author
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Book not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.put('/books/:id', updateBookHandler);
+
+/**
+ * @openapi
+ * /books/{id}:
+ *   delete:
+ *     summary: Delete a book
+ *     tags:
+ *       - Books
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: b4
+ *     responses:
+ *       204:
+ *         description: Book deleted (no response body)
+ *       404:
+ *         description: Book not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.delete('/books/:id', deleteBookHandler);
+
+/* ----------------------------- Authors ----------------------------- */
+
 /**
  * @openapi
  * /authors:
@@ -153,7 +313,7 @@ router.get('/books/:id', getBookByIdHandler);
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/authors', getAllAuthorsHandler);
- 
+
 /**
  * @openapi
  * /authors/{id}:
@@ -189,7 +349,7 @@ router.get('/authors', getAllAuthorsHandler);
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/authors/:id', getAuthorByIdHandler);
- 
+
 /**
  * @openapi
  * /authors:
@@ -234,7 +394,7 @@ router.get('/authors/:id', getAuthorByIdHandler);
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/authors', createAuthorHandler);
- 
+
 /**
  * @openapi
  * /authors/{id}:
@@ -285,7 +445,7 @@ router.post('/authors', createAuthorHandler);
  *               $ref: '#/components/schemas/Error'
  */
 router.put('/authors/:id', updateAuthorHandler);
- 
+
 /**
  * @openapi
  * /authors/{id}:
